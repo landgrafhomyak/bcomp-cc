@@ -52,26 +52,20 @@ internal class MacroMappings(baseLength: UInt) {
          * Length of macro definition.
          * @author Andrew Golovashevich
          */
-        val oldLength: UInt,
+        val realLength: UInt,
+
         /**
-         * Child mapping (if expansion contains another macro).
+         * Virtual length of expansion.
          * @author Andrew Golovashevich
          */
-        @JvmField
-        val child: MacroMappings,
+        var virtualLength: UInt,
         /**
          * Offset to get real start position: `real = `[`virtual`][MacroMappings.Injection.position]` - offset`
          * @author Andrew Golovashevich
          */
         val offset: UInt,
     ) {
-        /**
-         * Virtual length of expansion.
-         * @author Andrew Golovashevich
-         */
-        inline val newLength: UInt get() = this.child.length
-
-        override fun toString(): String = "<macro injection metadata ${this.oldLength}->${this.newLength} offset=${this.offset}>"
+        override fun toString(): String = "<macro injection metadata ${this.realLength}=>${this.virtualLength} offset=${this.offset}>"
     }
 
     /**
@@ -91,25 +85,25 @@ internal class MacroMappings(baseLength: UInt) {
     /**
      * Adds info about injection to mapping. If [position][where] is virtual (inside macro expansion), it will be injected to appropriated child injection.
      * @param where Start position of macro use. Virtual expansion will be started at this index too.
-     * @param oldLength Real length of macro definition.
-     * @param newLength Length of expansion with injected macro parameters, but without nested macro.
+     * @param realLength Real length of macro definition.
+     * @param virtualLength Length of expansion with injected macro parameters, but without nested macro.
      * @author Andrew Golovashevich
      */
     @Suppress("RemoveRedundantQualifierName")
-    fun inject(where: UInt, oldLength: UInt, newLength: UInt) {
-        this.length = this.length + newLength - oldLength
+    fun inject(where: UInt, realLength: UInt, virtualLength: UInt) {
+        this.length += virtualLength - realLength
         if (this.data.isEmpty()) {
-            this.data.add(MacroMappings.Injection(where, oldLength, MacroMappings(newLength), 0u))
+            this.data.add(MacroMappings.Injection(where, realLength, virtualLength, 0u))
             return
         }
         val last = this.data.last()
         if (where < last.position) {
             throw IllegalArgumentException()
         }
-        if (where - last.position < last.child.length) {
-            last.child.inject(where - last.position, oldLength, newLength)
+        if (where - last.position < last.virtualLength) {
+            last.virtualLength += virtualLength - realLength
         } else {
-            this.data.add(MacroMappings.Injection(where, oldLength, MacroMappings(newLength), last.offset + last.child.length - last.oldLength))
+            this.data.add(MacroMappings.Injection(where, realLength, virtualLength, last.offset + last.virtualLength - last.realLength))
         }
     }
 
@@ -140,8 +134,8 @@ internal class MacroMappings(baseLength: UInt) {
     fun mapStart(index: UInt): UInt {
         val injection = this.map(index) ?: return index
         @Suppress("LiftReturnOrAssignment")
-        if (index >= injection.position + injection.newLength)
-            return index - (injection.offset + injection.newLength - injection.oldLength)
+        if (index >= injection.position + injection.virtualLength)
+            return index - (injection.offset + injection.virtualLength - injection.realLength)
         else
             return injection.position - injection.offset
     }
@@ -154,9 +148,9 @@ internal class MacroMappings(baseLength: UInt) {
     fun mapEnd(index: UInt): UInt {
         val injection = this.map(index) ?: return index
         @Suppress("LiftReturnOrAssignment")
-        if (index >= injection.position + injection.newLength)
-            return index - (injection.offset + injection.newLength - injection.oldLength)
+        if (index >= injection.position + injection.virtualLength)
+            return index - (injection.offset + injection.virtualLength - injection.realLength)
         else
-            return injection.position - injection.offset + injection.oldLength
+            return injection.position - injection.offset + injection.realLength
     }
 }

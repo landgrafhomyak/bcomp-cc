@@ -48,7 +48,7 @@ internal class MacroMappingsTest {
     }
 
     /**
-     * String with inner macro.
+     * String with nested macro.
      * ```
      *         b:                      [  0    1    2    3    4 ]
      *         a:            [  0    1 |                        |  3    4 ]
@@ -59,7 +59,7 @@ internal class MacroMappingsTest {
      * @author Andrew Golovashevich
      */
     @Test
-    fun innerMacro() = buildMacroMappingsTest {
+    fun nestedMacro() = buildMacroMappingsTest {
         val a = define(2u) { s { 5u } }
         val b = define(2u) { s { 2u } m { a } s { 2u } }
 
@@ -93,7 +93,7 @@ internal class MacroMappingsTest {
     }
 
     /**
-     * String with 2 sequential macro and 1 inner.
+     * String with 2 sequential macro and 1 nested.
      * ```
      *         a:            [  0    1    2    3    4 ]         [  0    1    2    3    4 ]
      *         b:                                     [  0    1 |                        |  4    5 ]
@@ -104,7 +104,7 @@ internal class MacroMappingsTest {
      * @author Andrew Golovashevich
      */
     @Test
-    fun sequentialInnerMacro() = buildMacroMappingsTest {
+    fun sequentialNestedMacro() = buildMacroMappingsTest {
         val a = define(2u) { s { 5u } }
         val b = define(2u) { s { 2u } m { a } s { 2u } }
 

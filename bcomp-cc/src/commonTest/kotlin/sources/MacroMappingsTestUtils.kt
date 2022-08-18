@@ -6,6 +6,7 @@
 
 package io.github.landgrafhomyak.itmo.bcomp_cc.sources
 
+import kotlin.jvm.JvmName
 import kotlin.test.assertEquals
 import kotlin.to as makePair
 
@@ -194,7 +195,7 @@ private class MacroMappingsTestMappingsBuilder(private val map: MacroMappings) :
  * * Building string from [stuff][MacroMappingsTestInjectionBuilderScope.s] and [macro][MacroMappingsTestInjectionBuilderScope.m]
  * * Assertions
  *
- * @sample MacroMappingsTest.sequentialInnerMacro
+ * @sample MacroMappingsTest.sequentialNestedMacro
  * @author Andrew Golovashevich
  */
 internal fun buildMacroMappingsTest(builder: MacroMappingsTestBuilderScope.() -> Unit) {
