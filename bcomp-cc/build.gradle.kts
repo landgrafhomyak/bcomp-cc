@@ -15,4 +15,22 @@ kotlin {
             kotlinOptions.jvmTarget = "1.8"
         }
     }
+
+    @Suppress("UNUSED_VARIABLE")
+    sourceSets {
+        all {
+            languageSettings.optIn("kotlin.contracts.ExperimentalContracts")
+        }
+
+        val commonMain by getting {
+            dependencies {
+                implementation(kotlin("stdlib"))
+            }
+        }
+        val commonTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
+    }
 }
