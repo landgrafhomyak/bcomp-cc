@@ -174,7 +174,7 @@ private class MacroMappingsTestMappingsBuilder(private val map: MacroMappings) :
         val macro = macro()
         val length = MacroMappingsTestLengthBuilder()
         macro.expansion(length)
-        this@MacroMappingsTestMappingsBuilder.map.inject(this@MacroMappingsTestMappingsBuilder.pos, macro.baseLength, length.length)
+        this@MacroMappingsTestMappingsBuilder.map.addExpansion(this@MacroMappingsTestMappingsBuilder.pos, macro.baseLength, length.length)
         macro.expansion(this@MacroMappingsTestMappingsBuilder)
         return MacroMappingsTestInjectionBuilderScope.Line
     }

@@ -6,7 +6,7 @@ import kotlin.contracts.contract
 /**
  * One of classes, that allows running [C preprocessor](https://en.wikipedia.org/wiki/C_preprocessor) inline
  * while parsing sources.
- * Provides builder and access for mapping [lexemes'][Lexeme] entities from indices inside
+ * Provides builder and access for mapping [entities'][Entity] entities from indices inside
  * [macro](https://en.wikipedia.org/wiki/C_preprocessor#Macro_definition_and_expansion) expansion to indices
  * where macro used.
  *
@@ -17,7 +17,7 @@ import kotlin.contracts.contract
  * (20000 EXPR 30000)
  * ```
  *
- * Virtual lexemes:
+ * Virtual entities:
  * ```
  * (20000 ) + 10000 + ( 30000)
  *  {___}     {___}     {___}
@@ -26,11 +26,11 @@ import kotlin.contracts.contract
  *         expressions
  * ```
  *
- * Mapped lexemes:
+ * Mapped entities:
  * ```
  * (20000 EXPR 30000)
  *  {___}      {___}
- *   int constant literals (lexeme for 10000 was removed because inside expansion)
+ *   int constant literals (entity for 10000 was removed because inside expansion)
  *        {__}
  *        macro
  * {_________}
@@ -95,7 +95,7 @@ internal class MacroMappings(baseLength: UInt) {
      * @author Andrew Golovashevich
      */
     @Suppress("RemoveRedundantQualifierName")
-    fun inject(where: UInt, realLength: UInt, virtualLength: UInt) {
+    fun addExpansion(where: UInt, realLength: UInt, virtualLength: UInt) {
         this.length += virtualLength - realLength
         if (this.data.isEmpty()) {
             this.data.add(MacroMappings.Injection(where, realLength, virtualLength, 0u))
