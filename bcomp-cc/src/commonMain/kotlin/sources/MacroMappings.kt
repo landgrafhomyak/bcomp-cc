@@ -1,9 +1,14 @@
 package io.github.landgrafhomyak.itmo.bcomp_cc.sources
 
+import kotlin.contracts.InvocationKind
+import kotlin.contracts.contract
+
 /**
- * One of classes, that allows running [C preprocessor](https://en.wikipedia.org/wiki/C_preprocessor) inline while parsing sources.
+ * One of classes, that allows running [C preprocessor](https://en.wikipedia.org/wiki/C_preprocessor) inline
+ * while parsing sources.
  * Provides builder and access for mapping [lexemes'][Lexeme] entities from indices inside
- * [macro](https://en.wikipedia.org/wiki/C_preprocessor#Macro_definition_and_expansion) expansion to indices where macro used.
+ * [macro](https://en.wikipedia.org/wiki/C_preprocessor#Macro_definition_and_expansion) expansion to indices
+ * where macro used.
  *
  * Example program
  * ```c
@@ -33,7 +38,7 @@ package io.github.landgrafhomyak.itmo.bcomp_cc.sources
  *        {_________}
  *            right expression
  * ```
- *
+ * @see RecursiveStringIterator indices of injected string in example ascii-picture.
  * @see ParserScope
  * @author Andrew Golovashevich
  */
@@ -126,13 +131,41 @@ internal class MacroMappings(baseLength: UInt) {
         return if (lo == -1) null else this.data[lo]
     }
 
+
+    // todo make map for (start, end) with doc
     /**
-     * Maps virtual [index] to real. If it's inside macro expansion, start pos of macro use will be returned.
-     * (ex. right expression in [class example][MacroMappings])
+     * Maps virtual region to real. Does [mapStart][MacroMappings.mapStart] for [start] index and
+     * [mapEnd][MacroMappings.mapEnd] for [`start`][start]`+`[`length`][length]. If virtual indices in
+     * same injection, then [consumer callback][consumer] wouldn't call, otherwise it will consume mapped
+     * `position` and `length`.
      * @author Andrew Golovashevich
      */
-    fun mapStart(index: UInt): UInt {
-        val injection = this.map(index) ?: return index
+    inline fun map(start: UInt, length: UInt, consumer: (UInt, UInt) -> Unit) {
+        contract {
+            callsInPlace(consumer, InvocationKind.AT_MOST_ONCE)
+        }
+
+        val left = this.map(start)
+        val end = start + length
+        val right = this.map(end)
+
+        if (left === null) {
+            if (right === null) return consumer(start, length)
+            else consumer(start, this.mapEnd(right, end) - start)
+        } else {
+            if (right === null) throw RuntimeException("")
+            else {
+                if (left === right)
+                    return
+                @Suppress("NAME_SHADOWING")
+                val start = this.mapStart(left, start)
+                consumer(start, this.mapEnd(right, end) - start)
+            }
+        }
+    }
+
+
+    private inline fun mapStart(injection: Injection, index: UInt): UInt {
         @Suppress("LiftReturnOrAssignment")
         if (index >= injection.position + injection.virtualLength)
             return index - (injection.offset + injection.virtualLength - injection.realLength)
@@ -141,16 +174,30 @@ internal class MacroMappings(baseLength: UInt) {
     }
 
     /**
-     * Maps virtual [index] to real. If it's inside macro expansion, end pos of macro use will be returned.
-     * (ex. left expression in [class example][MacroMappings])
+     * Maps virtual [index] to real. If it's inside macro expansion, start pos of macro use will be returned.
+     * (ex. right expression in [class example][MacroMappings])
      * @author Andrew Golovashevich
      */
-    fun mapEnd(index: UInt): UInt {
-        val injection = this.map(index) ?: return index
+    fun mapStart(index: UInt): UInt {
+        return this.mapStart(this.map(index) ?: return index, index)
+    }
+
+
+    private inline fun mapEnd(injection: Injection, index: UInt): UInt {
         @Suppress("LiftReturnOrAssignment")
         if (index >= injection.position + injection.virtualLength)
             return index - (injection.offset + injection.virtualLength - injection.realLength)
         else
             return injection.position - injection.offset + injection.realLength
+    }
+
+
+    /**
+     * Maps virtual [index] to real. If it's inside macro expansion, end pos of macro use will be returned.
+     * (ex. left expression in [class example][MacroMappings])
+     * @author Andrew Golovashevich
+     */
+    fun mapEnd(index: UInt): UInt {
+        return this.mapEnd(this.map(index) ?: return index, index)
     }
 }
