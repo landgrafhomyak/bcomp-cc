@@ -15,15 +15,15 @@ internal inline fun checkStartEnd(start: UInt, end: UInt) {
 }
 
 internal inline fun IndexMapping.mapPosAndLength(start: UInt, length: UInt): IndexMapping.MappedPosLength {
-    val dist = object : IndexMapping.MappedPosLength {
+    val dst = object : IndexMapping.MappedPosLength {
         override var start: UInt = start
         override var length: UInt = length
     }
-    return this.mapPosAndLength(dist)
+    return this.mapPosAndLength(dst)
 }
 
 internal inline fun IndexMapping.mapPosAndPos(start: UInt, end: UInt): IndexMapping.MappedPosPos {
-    val dist = object : IndexMapping.MappedPosPos {
+    val dst = object : IndexMapping.MappedPosPos {
         override var start: UInt = start
         override var end: UInt = end
             set(value) {
@@ -31,7 +31,7 @@ internal inline fun IndexMapping.mapPosAndPos(start: UInt, end: UInt): IndexMapp
                 field = value
             }
     }
-    return this.mapPosAndPos(dist)
+    return this.mapPosAndPos(dst)
 }
 
 

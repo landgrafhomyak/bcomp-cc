@@ -1,58 +1,142 @@
 package io.github.landgrafhomyak.itmo.bcomp_cc.sources
 
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
 internal class CommentsIndexMappingTest : IndexMappingTest() {
     private class TestBuilderScope : IndexMappingTest.TestBuilderScope() {
+        private fun interface TestAssertion {
+            fun assert()
+        }
+
+        inner class StraightAssertion(
+            private val virtualStart: UInt,
+            private val realStart: UInt,
+            private val length: UInt,
+        ) : TestAssertion {
+            override fun assert() {
+                this@TestBuilderScope.assertStraightRegion(
+                    this.virtualStart,
+                    this.realStart,
+                    this.length
+                )
+            }
+        }
+
+        inner class MappedAssertion(
+            private val virtualStart: UInt,
+            private val virtualLength: UInt,
+            private val realStart: UInt,
+            private val realLength: UInt,
+        ) : TestAssertion {
+            override fun assert() {
+                this@TestBuilderScope.assertMappedRegion(
+                    this.virtualStart,
+                    this.virtualLength,
+                    this.realStart,
+                    this.realLength
+                )
+            }
+        }
+
         override val mapping = CommentsIndexMapping()
-        private var pos = 0u
+        private var realPos = 0u
+        private var virtualPos = 0u
+        private val assertions = ArrayList<TestAssertion>()
+        private val realSources = StringBuilder()
+        private val virtualSources = StringBuilder()
 
         infix fun TestBuilderScope.source(text: () -> String): TestBuilderScope {
-            this.pos += text().length.toUInt()
+            val source = text()
+            this.virtualSources.append(source)
+            this.realSources.append(source)
+            val length = source.length.toUInt()
+            this.assertions.add(StraightAssertion(this.virtualPos, this.realPos, length))
+            this.realPos += length
+            this.virtualPos += length
             return this
         }
 
         infix fun TestBuilderScope.comment(text: () -> String): TestBuilderScope {
-            val length = text().length.toUInt()
-            this.mapping.removeCommentRange(this.pos, length)
-            this.pos += length
+            val source = text()
+            this.realSources.append(source)
+            val length = source.length.toUInt()
+            this.assertions.add(MappedAssertion(this.virtualPos, 0u, this.realPos, length))
+            this.mapping.removeCommentRange(this.realPos, length)
+            this.realPos += length
             return this
+        }
+
+        fun runAssertions() {
+            for (assertion in this.assertions)
+                assertion.assert()
+            assertEquals(this.virtualSources.toString(), this.mapping.extractVirtualSources(this.realSources.toString()))
         }
     }
 
     private inline fun buildTest(builder: TestBuilderScope.() -> Unit) {
-        builder(TestBuilderScope())
+        val scope = TestBuilderScope()
+        builder(scope)
+        scope.runAssertions()
     }
 
     @Test
     fun noComments() = buildTest {
         source { "abc" } source { "def" } source { "ghi" }
-
-        assertStraightRegion(0u, 0u, 3u)
-        assertStraightRegion(3u, 3u, 3u)
-        assertStraightRegion(6u, 6u, 3u)
-        assertStraightRegion(0u, 0u, 9u)
     }
 
     @Test
     fun oneComment() = buildTest {
         source { "before" } comment { "/* comment */" } source { "after" }
-
-        assertStraightRegion(0u, 0u, 6u)
-        assertMappedRegion(6u, 0u, 6u, 13u)
-        assertStraightRegion(6u, 19u, 5u)
     }
 
     @Test
     fun manyComments() = buildTest {
-        source { "0" } comment { "1" } source { "2" } comment { "3" } source { "4" } comment { "5" } source { "6" }
+        source { "source" } comment { "/* comment */" } source { "source" } comment { "/* comment */" }
+        source { "source" } comment { "/* comment */" } source { "source" }
+    }
 
-        assertStraightRegion(0u, 0u, 1u)
-        assertMappedRegion(1u, 0u, 1u, 1u)
-        assertStraightRegion(1u, 2u, 1u)
-        assertMappedRegion(2u, 0u, 3u, 1u)
-        assertStraightRegion(2u, 4u, 1u)
-        assertMappedRegion(3u, 0u, 5u, 1u)
-        assertStraightRegion(3u, 6u, 1u)
+    @Test
+    fun commentAtStart() = buildTest {
+        comment { "/* comment */" } source { "source" }
+    }
+
+    @Test
+    fun commentAtEnd() = buildTest {
+        source { "source" } comment { "/* comment */" }
+    }
+
+    @Test
+    fun commentAtStartAndEnd() = buildTest {
+        comment { "/* comment */" } source { "source" } comment { "/* comment */" }
+    }
+
+    @Test
+    fun commentAtStartAndMiddleAndEnd() = buildTest {
+        comment { "/* comment */" } source { "source" } comment { "/* comment */" }
+        source { "source" } comment { "/* comment */" }
+    }
+
+    @Test
+    fun justOneComment() = buildTest {
+        comment { "/* comment */" }
+    }
+
+    @Test
+    fun manyCommentsNoSources() = buildTest {
+        for (i in 0 until 100)
+            comment { "/* comment */" }
+    }
+
+    @Test
+    fun soManyComments() = buildTest {
+        for (i in 0 until 20) {
+            for (j in 0 until 20)
+                source { "source" } comment { "/* comment */" }
+            for (j in 0 until 20)
+                comment { "/* comment */" }
+            for (j in 0 until 20)
+                comment { "/* comment */" } source { "source" }
+        }
     }
 }
