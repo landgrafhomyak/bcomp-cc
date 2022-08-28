@@ -41,6 +41,10 @@ sealed class Entity(
     class MultiLineComment(start: UInt, length: UInt) :
         Entity(start, length), Entity.cComment
 
+    class UnclosedMultilineComment(start: UInt) :
+        Entity(start, 1u), Entity.cComment, Entity.cWarning {
+        override val message: String get() = "Unclosed multiline comment"
+    }
 
     /**
      * Category of entities related to preprocessor directives.
