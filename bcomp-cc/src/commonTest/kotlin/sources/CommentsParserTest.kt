@@ -61,7 +61,7 @@ internal class CommentsParserTest {
 
             override fun currentChar(): Char {
                 if (this.pos >= realSources.length.toUInt())
-                    throw SourceEndedSignal()
+                    throw SourceEndedSignal
                 return realSources[this.pos.toInt()]
             }
 

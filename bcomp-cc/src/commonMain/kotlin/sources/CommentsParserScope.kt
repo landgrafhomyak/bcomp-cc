@@ -15,7 +15,7 @@ class CommentsParserScopeImpl(
 
     override fun currentChar(): Char {
         if (this.realPos >= this.realSources.length.toUInt())
-            throw SourceEndedSignal()
+            throw SourceEndedSignal
         return this.realSources[this.realPos.toInt()]
     }
 

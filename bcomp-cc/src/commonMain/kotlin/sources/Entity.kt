@@ -71,17 +71,12 @@ sealed class Entity(
     class PreprocessorDirectiveSign(start: UInt) :
         Entity(start, 1u), Entity.cPreprocessorDirective
 
-    class PreprocessorDirectiveWithoutName(start: UInt, length: UInt) :
-        Entity(start, length), Entity.cPreprocessorDirective, Entity.cError {
-        override val message: String = "Missed preprocessor name"
-    }
-
-    class UnexpectedCharsInIdentifier(start: UInt, wrongChar: Char) :
+    class UnexpectedCharInIdentifier(start: UInt, wrongChar: Char) :
         Entity(start, 1u), Entity.cError {
         override val message: String = "Unexpected char '$wrongChar' in identifier"
     }
 
-    class PreprocessorIncludePath(start: UInt, length: UInt) :
+    class PreprocessorPathString(start: UInt, length: UInt) :
         Entity(start, length), Entity.cPreprocessorDirective
 
     class UnclosedStringLiteral(start: UInt) :
@@ -94,4 +89,33 @@ sealed class Entity(
      */
     class PreprocessorDirectiveName(start: UInt, length: UInt) :
         Entity(start, length), Entity.cPreprocessorDirective
+
+    class PreprocessorConditionalBranchWithoutIf(start: UInt, length: UInt) :
+        Entity(start, length), Entity.cPreprocessorDirective, Entity.cError {
+        override val message: String
+            get() = "Directives #else, #elif and #endif without starting #if"
+    }
+
+    class PreprocessorMissedCondition(start: UInt) :
+        Entity(start, 1u), Entity.cPreprocessorDirective, Entity.cError {
+        override val message: String
+            get() = "Missed condition in conditional directive"
+    }
+
+    class PreprocessorErrorDirective(start: UInt, length: UInt, override val message: String) :
+        Entity(start, length), Entity.cPreprocessorDirective, Entity.cError
+
+    class PreprocessorMissedLineNumber(start: UInt) :
+        Entity(start, 1u), Entity.cPreprocessorDirective, Entity.cError {
+        override val message: String
+            get() = "Missed line number in #line directive"
+    }
+
+    class IntegerLiteral(start: UInt, length: UInt) : Entity(start, length)
+
+    class PreprocessorInvalidLineNumber(start: UInt, length: UInt) :
+        Entity(start, length), Entity.cPreprocessorDirective, Entity.cError {
+        override val message: String
+            get() = "Line number is incorrect"
+    }
 }
